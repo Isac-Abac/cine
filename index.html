@@ -69,7 +69,7 @@
           </select>
 
           <label for="customerName">Nombre del cliente:</label>
-          <input id="customerName" type="text" maxlength="80" placeholder="Ej: Ana López" required />
+          <input id="customerName" type="text" maxlength="80" placeholder="Ej: Ana López" pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\\s'-]+$" title="Ingresa solo letras (sin números)." required />
 
           <label for="customerEmail">Correo:</label>
           <input id="customerEmail" type="email" placeholder="correo@ejemplo.com" required />
@@ -101,6 +101,8 @@
         <section class="summary" id="summary">
           <h3>Resumen de reserva</h3>
           <p id="summaryMovie">Película: -</p>
+          <p id="summaryRelease">Estreno: -</p>
+          <p id="summaryRating">Clasificación: -</p>
           <p id="summarySeats">Asientos: 0</p>
           <p id="summaryTotal">Total: Q0.00</p>
         </section>

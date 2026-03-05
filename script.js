@@ -5,6 +5,8 @@ const movies = [
     title: 'Duna: Parte Dos',
     schedule: '18:30',
     priceGTQ: 55,
+    releaseDate: '2024-03-01',
+    rating: 'PG-13',
     poster: 'https://images.tokopedia.net/img/cache/500-square/VqbcmM/2024/6/11/617d072a-62ce-49ff-8998-4323278499e1.jpg'
   },
   {
@@ -12,6 +14,8 @@ const movies = [
     title: 'Spider-Man: Across the Spider-Verse',
     schedule: '20:00',
     priceGTQ: 48,
+    releaseDate: '2023-06-02',
+    rating: 'PG',
     poster: 'https://image.tmdb.org/t/p/original/nGxUxi3PfXDRm7Vg95VBNgNM8yc.jpg'
   },
   {
@@ -19,7 +23,27 @@ const movies = [
     title: 'Oppenheimer',
     schedule: '21:15',
     priceGTQ: 60,
+    releaseDate: '2023-07-21',
+    rating: 'R',
     poster: 'https://static1.srcdn.com/wordpress/wp-content/uploads/2023/05/oppenheimer-poster.jpg'
+  },
+  {
+    id: 4,
+    title: 'Transformers: El despertar de las bestias',
+    schedule: '1:15',
+    priceGTQ: 60,
+    releaseDate: '2023-06-09',
+    rating: 'PG-13',
+    poster: 'https://tse1.mm.bing.net/th/id/OIP.SvQm3rTDo_5l149vw7lNEwHaK-?rs=1&pid=ImgDetMain&o=7&rm=3'
+  },
+  {
+    id: 5,
+    title: 'It 2: Capítulo Dos',
+    schedule: '1:15',
+    priceGTQ: 60,
+    releaseDate: '2019-09-06',
+    rating: 'R',
+    poster: 'https://image.tmdb.org/t/p/original/7Kg3QHaL0RCgwx0TppjGisFETAI.jpg'
   }
 ];
 
@@ -35,6 +59,8 @@ const moviePoster = document.getElementById('moviePoster');
 const posterCaption = document.getElementById('posterCaption');
 const seatsContainer = document.getElementById('seatsContainer');
 const summaryMovie = document.getElementById('summaryMovie');
+const summaryRelease = document.getElementById('summaryRelease');
+const summaryRating = document.getElementById('summaryRating');
 const summarySeats = document.getElementById('summarySeats');
 const summaryTotal = document.getElementById('summaryTotal');
 const paymentForm = document.getElementById('paymentForm');
@@ -66,6 +92,7 @@ function init() {
   paymentForm.addEventListener('submit', onPayReservation);
   cancelBtn.addEventListener('click', cancelReservation);
   pdfBtn.addEventListener('click', generatePDF);
+  customerName.addEventListener('input', sanitizeNameInput);
 
   // Fallback visual si alguna URL de poster falla
   moviePoster.addEventListener('error', onPosterError);
@@ -169,6 +196,32 @@ function formatPrice(gtqValue) {
   return `Q${gtqValue.toFixed(2)}`;
 }
 
+// Convierte un monto en GTQ al valor numérico de la moneda seleccionada
+function convertFromGTQ(gtqValue) {
+  return currencySelect.value === 'USD' ? gtqValue * GTQ_TO_USD : gtqValue;
+}
+
+// Formatea fechas ISO a un formato legible en español
+function formatReleaseDate(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00`);
+  return date.toLocaleDateString('es-GT', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+// Limpia caracteres numéricos en tiempo real para el campo de nombre
+function sanitizeNameInput() {
+  customerName.value = customerName.value.replace(/[0-9]/g, '');
+}
+
+// Verifica que el nombre tenga solo letras, espacios y separadores comunes
+function isValidCustomerName(value) {
+  const nameRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]+$/;
+  return nameRegex.test(value.trim());
+}
+
 // Recalcula y pinta toda la interfaz relacionada al estado actual
 function refreshUI() {
   const movie = currentMovie();
@@ -187,6 +240,8 @@ function refreshUI() {
   movieInfo.innerHTML = `
     <strong>${movie.title}</strong><br>
     Horario: ${movie.schedule}<br>
+    Estreno: ${formatReleaseDate(movie.releaseDate)}<br>
+    Clasificación: ${movie.rating}<br>
     Precio por boleto: ${formatPrice(movie.priceGTQ)}
   `;
 
@@ -197,6 +252,8 @@ function refreshUI() {
 
   // Actualiza resumen de reserva
   summaryMovie.textContent = `Película: ${movie.title} (${movie.schedule})`;
+  summaryRelease.textContent = `Estreno: ${formatReleaseDate(movie.releaseDate)}`;
+  summaryRating.textContent = `Clasificación: ${movie.rating}`;
   summarySeats.textContent = `Asientos: ${selectedSeats.size} [${Array.from(selectedSeats).sort((a, b) => a - b).join(', ') || '-'}]`;
   summaryTotal.textContent = `Total: ${formatPrice(totalGTQ)}`;
 }
@@ -224,6 +281,16 @@ function onPayReservation(event) {
       icon: 'error',
       title: 'Datos incompletos',
       text: 'Completa método de pago, nombre y correo.'
+    });
+    return;
+  }
+
+  // Validación para impedir nombres con números o caracteres inválidos
+  if (!isValidCustomerName(customerName.value)) {
+    showAlert({
+      icon: 'error',
+      title: 'Nombre inválido',
+      text: 'El nombre solo puede contener letras y espacios.'
     });
     return;
   }
@@ -277,7 +344,7 @@ function cancelReservation() {
 }
 
 // Genera un boleto PDF con datos actuales de la reserva
-function generatePDF() {
+async function generatePDF() {
   const movie = currentMovie();
   const seats = Array.from(selectedSeats).sort((a, b) => a - b);
   const totalGTQ = selectedSeats.size * movie.priceGTQ;
@@ -304,23 +371,111 @@ function generatePDF() {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 12;
+  let y = 14;
 
+  // Fondo y marco principal con estilo de factura
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  doc.setDrawColor(22, 163, 74);
+  doc.setLineWidth(1.2);
+  doc.rect(6, 6, pageWidth - 12, pageHeight - 12);
+
+  // Franja superior de color
+  doc.setFillColor(22, 163, 74);
+  doc.rect(6, 6, pageWidth - 12, 10, 'F');
+
+  // Imagen del poster en la parte superior (si está disponible)
+  const posterDataUrl = await loadImageAsDataUrl(moviePoster.src || movie.poster);
+  if (posterDataUrl) {
+    try {
+      const imageFormat = detectImageFormat(posterDataUrl);
+      doc.addImage(posterDataUrl, imageFormat, margin, y, pageWidth - margin * 2, 60);
+      y += 66;
+    } catch (error) {
+      y += 8;
+    }
+  } else {
+    y += 8;
+  }
+
+  doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('Boleto de Cine', 20, 20);
+  doc.text('FACTURA DE RESERVA DE CINE', margin, y);
+  y += 8;
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
-  doc.text(`Cliente: ${customerName.value.trim() || 'N/D'}`, 20, 35);
-  doc.text(`Correo: ${customerEmail.value.trim() || 'N/D'}`, 20, 44);
-  doc.text(`Pelicula: ${movie.title}`, 20, 53);
-  doc.text(`Horario: ${movie.schedule}`, 20, 62);
-  doc.text(`Asientos: ${seats.join(', ')}`, 20, 71);
-  doc.text(`Metodo de pago: ${paymentMethod.value || 'N/D'}`, 20, 80);
-  doc.text(`Total: ${formatPrice(totalGTQ)}`, 20, 89);
-  doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 98);
+  doc.setFontSize(10.5);
+  doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, margin, y);
+  doc.text(`N° Factura: CINE-${Date.now().toString().slice(-6)}`, pageWidth - 72, y);
+  y += 8;
 
-  doc.save(`boleto-${movie.title.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+  // Bloque de datos del cliente
+  doc.setDrawColor(203, 213, 225);
+  doc.rect(margin, y, pageWidth - margin * 2, 24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Datos del cliente', margin + 3, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Nombre: ${customerName.value.trim() || 'N/D'}`, margin + 3, y + 13);
+  doc.text(`Correo: ${customerEmail.value.trim() || 'N/D'}`, margin + 3, y + 19);
+  doc.text(`Pago: ${paymentMethod.value || 'N/D'}`, pageWidth / 2 + 5, y + 13);
+  y += 30;
+
+  // Bloque de datos de la película
+  doc.rect(margin, y, pageWidth - margin * 2, 28);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Detalle de función', margin + 3, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Película: ${movie.title}`, margin + 3, y + 13);
+  doc.text(`Horario: ${movie.schedule}`, margin + 3, y + 19);
+  doc.text(`Estreno: ${formatReleaseDate(movie.releaseDate)}`, pageWidth / 2 + 5, y + 13);
+  doc.text(`Clasificación: ${movie.rating}`, pageWidth / 2 + 5, y + 19);
+  y += 36;
+
+  // Tabla tipo factura
+  const unitPrice = convertFromGTQ(movie.priceGTQ);
+  const subtotal = unitPrice * selectedSeats.size;
+  const symbol = currencySelect.value === 'USD' ? '$' : 'Q';
+  const totalText = `${symbol}${subtotal.toFixed(2)}`;
+  const seatsText = seats.join(', ');
+
+  doc.setFillColor(22, 163, 74);
+  doc.setTextColor(255, 255, 255);
+  doc.rect(margin, y, pageWidth - margin * 2, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Descripción', margin + 3, y + 5.5);
+  doc.text('Cant.', 128, y + 5.5);
+  doc.text('P. Unit.', 146, y + 5.5);
+  doc.text('Subtotal', 172, y + 5.5);
+  y += 8;
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'normal');
+  doc.rect(margin, y, pageWidth - margin * 2, 16);
+  doc.text(`Boletos - Asientos: ${seatsText}`, margin + 3, y + 6);
+  doc.text(`Clasificación ${movie.rating} | Estreno ${formatReleaseDate(movie.releaseDate)}`, margin + 3, y + 12);
+  doc.text(String(selectedSeats.size), 130, y + 9);
+  doc.text(`${symbol}${unitPrice.toFixed(2)}`, 146, y + 9);
+  doc.text(totalText, 172, y + 9);
+  y += 22;
+
+  // Totales
+  doc.setFont('helvetica', 'bold');
+  doc.setDrawColor(15, 23, 42);
+  doc.rect(pageWidth - 72, y, 60, 18);
+  doc.text('TOTAL', pageWidth - 68, y + 7);
+  doc.setFontSize(13);
+  doc.text(totalText, pageWidth - 32, y + 14, { align: 'right' });
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Gracias por tu compra. Presenta esta factura al ingresar.', margin, pageHeight - 20);
+
+  doc.save(`factura-${movie.title.toLowerCase().replace(/\s+/g, '-')}.pdf`);
 
   showAlert({
     icon: 'success',
@@ -355,6 +510,30 @@ function openPosterModal() {
   }
 
   window.open(imageSrc, '_blank', 'noopener,noreferrer');
+}
+
+// Descarga una imagen y la convierte a DataURL para incrustarla en el PDF
+async function loadImageAsDataUrl(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    return null;
+  }
+}
+
+// Detecta el formato de una imagen DataURL para usarlo con jsPDF
+function detectImageFormat(dataUrl) {
+  if (dataUrl.startsWith('data:image/png')) return 'PNG';
+  if (dataUrl.startsWith('data:image/webp')) return 'WEBP';
+  return 'JPEG';
 }
 
 // Crea una imagen SVG embebida para usar como poster de respaldo
