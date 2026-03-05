@@ -68,6 +68,41 @@
             <option value="Transferencia">Transferencia</option>
           </select>
 
+          <!-- Campos dinámicos según método de pago -->
+          <section id="paymentDetails" class="payment-details">
+            <!-- Datos para pago con tarjeta -->
+            <div id="cardFields" class="payment-box is-hidden">
+              <label for="cardFullName">Nombre completo</label>
+              <input id="cardFullName" type="text" maxlength="80" placeholder="Ejemplo: Ana Pérez" />
+
+              <label for="cardNumber">Número de tarjeta</label>
+              <input id="cardNumber" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" />
+
+              <div class="payment-row">
+                <div>
+                  <label for="cardExpiry">Expira (MM/AA)</label>
+                  <input id="cardExpiry" type="text" inputmode="numeric" maxlength="5" placeholder="MM/AA" />
+                </div>
+                <div>
+                  <label for="cardCvv">CVV</label>
+                  <input id="cardCvv" type="password" inputmode="numeric" maxlength="4" placeholder="123" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Datos para pago por transferencia -->
+            <div id="transferFields" class="payment-box is-hidden">
+              <label for="bankName">Nombre del banco</label>
+              <input id="bankName" type="text" maxlength="60" placeholder="Ejemplo: Banco Industrial" />
+
+              <label for="transferReceipt">Número de boleta</label>
+              <input id="transferReceipt" type="text" inputmode="numeric" maxlength="20" placeholder="Ejemplo: 00987654" />
+
+              <label for="transferAmount">Monto</label>
+              <input id="transferAmount" type="text" readonly />
+            </div>
+          </section>
+
           <label for="customerName">Nombre del cliente:</label>
           <input id="customerName" type="text" maxlength="80" placeholder="Ej: Ana López" pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\\s'-]+$" title="Ingresa solo letras (sin números)." required />
 

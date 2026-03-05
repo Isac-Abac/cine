@@ -69,6 +69,15 @@ const pdfBtn = document.getElementById('pdfBtn');
 const paymentMethod = document.getElementById('paymentMethod');
 const customerName = document.getElementById('customerName');
 const customerEmail = document.getElementById('customerEmail');
+const cardFields = document.getElementById('cardFields');
+const transferFields = document.getElementById('transferFields');
+const cardFullName = document.getElementById('cardFullName');
+const cardNumber = document.getElementById('cardNumber');
+const cardExpiry = document.getElementById('cardExpiry');
+const cardCvv = document.getElementById('cardCvv');
+const bankName = document.getElementById('bankName');
+const transferReceipt = document.getElementById('transferReceipt');
+const transferAmount = document.getElementById('transferAmount');
 
 // Estado global de la reserva actual
 let selectedMovieId = movies[0].id;
@@ -89,15 +98,25 @@ function init() {
   movieSelect.addEventListener('change', onMovieChange);
   currencySelect.addEventListener('change', refreshUI);
   themeToggle.addEventListener('click', toggleTheme);
+  paymentMethod.addEventListener('change', updatePaymentMethodUI);
   paymentForm.addEventListener('submit', onPayReservation);
   cancelBtn.addEventListener('click', cancelReservation);
   pdfBtn.addEventListener('click', generatePDF);
   customerName.addEventListener('input', sanitizeNameInput);
+  cardNumber.addEventListener('input', sanitizeCardNumberInput);
+  cardExpiry.addEventListener('input', sanitizeCardExpiryInput);
+  cardCvv.addEventListener('input', () => {
+    cardCvv.value = cardCvv.value.replace(/\D/g, '');
+  });
+  transferReceipt.addEventListener('input', () => {
+    transferReceipt.value = transferReceipt.value.replace(/\D/g, '');
+  });
 
   // Fallback visual si alguna URL de poster falla
   moviePoster.addEventListener('error', onPosterError);
   // Al hacer clic se abre el poster en un modal de tamaño completo
   moviePoster.addEventListener('click', openPosterModal);
+  updatePaymentMethodUI();
 }
 
 // Llena el select de películas con texto descriptivo
@@ -222,6 +241,99 @@ function isValidCustomerName(value) {
   return nameRegex.test(value.trim());
 }
 
+// Total actual en quetzales según película y asientos seleccionados
+function getCurrentTotalGTQ() {
+  const movie = currentMovie();
+  return selectedSeats.size * movie.priceGTQ;
+}
+
+// Identifica si el método de pago seleccionado es tarjeta
+function isCardPayment(method) {
+  return method === 'Tarjeta de crédito' || method === 'Tarjeta de débito';
+}
+
+// Ajusta visibilidad y requisitos de campos según método de pago
+function updatePaymentMethodUI() {
+  const method = paymentMethod.value;
+  const showCard = isCardPayment(method);
+  const showTransfer = method === 'Transferencia';
+
+  cardFields.classList.toggle('is-hidden', !showCard);
+  transferFields.classList.toggle('is-hidden', !showTransfer);
+
+  cardFullName.required = showCard;
+  cardNumber.required = showCard;
+  cardExpiry.required = showCard;
+  cardCvv.required = showCard;
+  bankName.required = showTransfer;
+  transferReceipt.required = showTransfer;
+
+  if (showCard && !cardFullName.value.trim() && customerName.value.trim()) {
+    cardFullName.value = customerName.value.trim();
+  }
+
+  updateTransferAmountField();
+}
+
+// Actualiza el monto de transferencia automáticamente desde el total
+function updateTransferAmountField() {
+  transferAmount.value = formatPrice(getCurrentTotalGTQ());
+}
+
+// Aplica formato 0000 0000 0000 0000 en número de tarjeta
+function sanitizeCardNumberInput() {
+  const digits = cardNumber.value.replace(/\D/g, '').slice(0, 16);
+  cardNumber.value = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
+// Aplica formato MM/AA y valida caracteres permitidos
+function sanitizeCardExpiryInput() {
+  const digits = cardExpiry.value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) {
+    cardExpiry.value = digits;
+    return;
+  }
+  cardExpiry.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+// Valida datos mínimos de tarjeta antes de aprobar la reserva
+function validateCardFields() {
+  const cleanNumber = cardNumber.value.replace(/\s/g, '');
+  const expiryMatch = /^(\d{2})\/(\d{2})$/.exec(cardExpiry.value);
+
+  if (!isValidCustomerName(cardFullName.value)) {
+    return 'Ingresa un nombre válido del titular de la tarjeta.';
+  }
+
+  if (cleanNumber.length !== 16) {
+    return 'El número de tarjeta debe tener 16 dígitos.';
+  }
+
+  if (!expiryMatch) {
+    return 'La fecha de expiración debe estar en formato MM/AA.';
+  }
+
+  const month = Number(expiryMatch[1]);
+  if (month < 1 || month > 12) {
+    return 'El mes de expiración no es válido.';
+  }
+
+  if (!/^\d{3,4}$/.test(cardCvv.value)) {
+    return 'El CVV debe tener 3 o 4 dígitos.';
+  }
+
+  return '';
+}
+
+// Valida datos mínimos requeridos para transferencia
+function validateTransferFields() {
+  if (!bankName.value.trim()) return 'Ingresa el nombre del banco.';
+  if (!/^\d{4,20}$/.test(transferReceipt.value)) {
+    return 'El número de boleta debe contener entre 4 y 20 dígitos.';
+  }
+  return '';
+}
+
 // Recalcula y pinta toda la interfaz relacionada al estado actual
 function refreshUI() {
   const movie = currentMovie();
@@ -234,7 +346,7 @@ function refreshUI() {
   });
 
   // Cálculo de total según número de boletos
-  const totalGTQ = selectedSeats.size * movie.priceGTQ;
+  const totalGTQ = getCurrentTotalGTQ();
 
   // Actualiza zona informativa de la película
   movieInfo.innerHTML = `
@@ -256,6 +368,9 @@ function refreshUI() {
   summaryRating.textContent = `Clasificación: ${movie.rating}`;
   summarySeats.textContent = `Asientos: ${selectedSeats.size} [${Array.from(selectedSeats).sort((a, b) => a - b).join(', ') || '-'}]`;
   summaryTotal.textContent = `Total: ${formatPrice(totalGTQ)}`;
+
+  // Mantiene sincronizado el monto cuando el pago es por transferencia
+  updateTransferAmountField();
 }
 
 // Valida datos y simula pago de reserva
@@ -263,7 +378,7 @@ function onPayReservation(event) {
   event.preventDefault();
 
   const movie = currentMovie();
-  const totalGTQ = selectedSeats.size * movie.priceGTQ;
+  const totalGTQ = getCurrentTotalGTQ();
 
   // Validación: debe existir al menos un asiento seleccionado
   if (selectedSeats.size === 0) {
@@ -295,12 +410,46 @@ function onPayReservation(event) {
     return;
   }
 
+  // Validación condicional por tipo de pago seleccionado
+  if (isCardPayment(paymentMethod.value)) {
+    const cardError = validateCardFields();
+    if (cardError) {
+      showAlert({
+        icon: 'error',
+        title: 'Tarjeta inválida',
+        text: cardError
+      });
+      return;
+    }
+  }
+
+  if (paymentMethod.value === 'Transferencia') {
+    const transferError = validateTransferFields();
+    if (transferError) {
+      showAlert({
+        icon: 'error',
+        title: 'Transferencia inválida',
+        text: transferError
+      });
+      return;
+    }
+  }
+
+  let paymentDetail = '';
+  if (isCardPayment(paymentMethod.value)) {
+    paymentDetail = `Titular: <b>${escapeHtml(cardFullName.value.trim())}</b><br>Tarjeta: <b>**** **** **** ${cardNumber.value.replace(/\s/g, '').slice(-4)}</b>`;
+  } else if (paymentMethod.value === 'Transferencia') {
+    paymentDetail = `Banco: <b>${escapeHtml(bankName.value.trim())}</b><br>Boleta: <b>${escapeHtml(transferReceipt.value)}</b><br>Monto transferido: <b>${escapeHtml(transferAmount.value)}</b>`;
+  }
+
   showAlert({
     icon: 'success',
     title: 'Pago aprobado',
     html: `
       Cliente: <b>${escapeHtml(customerName.value.trim())}</b><br>
       Película: <b>${movie.title}</b><br>
+      Método: <b>${escapeHtml(paymentMethod.value)}</b><br>
+      ${paymentDetail ? `${paymentDetail}<br>` : ''}
       Asientos: <b>${Array.from(selectedSeats).sort((a, b) => a - b).join(', ')}</b><br>
       Total pagado: <b>${formatPrice(totalGTQ)}</b>
     `,
@@ -331,6 +480,7 @@ function cancelReservation() {
 
     selectedSeats = new Set();
     paymentForm.reset();
+    updatePaymentMethodUI();
     refreshUI();
 
     showAlert({
