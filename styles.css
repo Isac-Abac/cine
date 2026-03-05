@@ -115,6 +115,7 @@ label {
   color: var(--muted);
 }
 
+/* Estilo base de select/input en ambos modos */
 select,
 input {
   width: 100%;
@@ -126,9 +127,29 @@ input {
   color: var(--text);
 }
 
+/* Corrección de legibilidad del desplegable nativo (modo oscuro y claro) */
+option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+/* Personalización adicional para selects y evitar problemas de contraste */
+select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
 body.light select,
 body.light input {
-  background: #fff;
+  background-color: #fff;
 }
 
 .movie-info {
@@ -140,15 +161,16 @@ body.light input {
 
 /* Marco visual del poster */
 .poster-wrap {
-  margin: 1rem 0;
+  margin: 1rem 0 0.7rem;
 }
 
 #moviePoster {
   width: 100%;
-  height: 260px;
+  height: 420px;
   border-radius: 14px;
   object-fit: cover;
   border: 1px solid var(--border);
+  cursor: zoom-in;
 }
 
 #posterCaption {

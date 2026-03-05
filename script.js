@@ -5,21 +5,21 @@ const movies = [
     title: 'Duna: Parte Dos',
     schedule: '18:30',
     priceGTQ: 55,
-    poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80'
+    poster: 'https://images.tokopedia.net/img/cache/500-square/VqbcmM/2024/6/11/617d072a-62ce-49ff-8998-4323278499e1.jpg'
   },
   {
     id: 2,
     title: 'Spider-Man: Across the Spider-Verse',
     schedule: '20:00',
     priceGTQ: 48,
-    poster: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=1200&q=80'
+    poster: 'https://image.tmdb.org/t/p/original/nGxUxi3PfXDRm7Vg95VBNgNM8yc.jpg'
   },
   {
     id: 3,
     title: 'Oppenheimer',
     schedule: '21:15',
     priceGTQ: 60,
-    poster: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1200&q=80'
+    poster: 'https://static1.srcdn.com/wordpress/wp-content/uploads/2023/05/oppenheimer-poster.jpg'
   }
 ];
 
@@ -66,6 +66,11 @@ function init() {
   paymentForm.addEventListener('submit', onPayReservation);
   cancelBtn.addEventListener('click', cancelReservation);
   pdfBtn.addEventListener('click', generatePDF);
+
+  // Fallback visual si alguna URL de poster falla
+  moviePoster.addEventListener('error', onPosterError);
+  // Al hacer clic se abre el poster en un modal de tamaño completo
+  moviePoster.addEventListener('click', openPosterModal);
 }
 
 // Llena el select de películas con texto descriptivo
@@ -124,7 +129,7 @@ function onMovieChange() {
   selectedSeats = new Set();
   refreshUI();
 
-  Swal.fire({
+  showAlert({
     icon: 'info',
     title: 'Película actualizada',
     text: 'Selecciona nuevamente tus asientos para esta función.',
@@ -136,7 +141,7 @@ function onMovieChange() {
 function toggleTheme() {
   document.body.classList.toggle('light');
 
-  Swal.fire({
+  showAlert({
     icon: 'success',
     title: 'Tema cambiado',
     text: document.body.classList.contains('light')
@@ -149,7 +154,7 @@ function toggleTheme() {
 
 // Devuelve la película actualmente seleccionada
 function currentMovie() {
-  return movies.find((movie) => movie.id === selectedMovieId);
+  return movies.find((movie) => movie.id === selectedMovieId) || movies[0];
 }
 
 // Formatea montos según la moneda elegida
@@ -187,6 +192,7 @@ function refreshUI() {
 
   // Muestra poster e identificación de la película
   moviePoster.src = movie.poster;
+  moviePoster.alt = `Poster de ${movie.title}`;
   posterCaption.textContent = `Poster: ${movie.title}`;
 
   // Actualiza resumen de reserva
@@ -204,7 +210,7 @@ function onPayReservation(event) {
 
   // Validación: debe existir al menos un asiento seleccionado
   if (selectedSeats.size === 0) {
-    Swal.fire({
+    showAlert({
       icon: 'warning',
       title: 'Sin asientos seleccionados',
       text: 'Debes seleccionar al menos un asiento para reservar.'
@@ -214,7 +220,7 @@ function onPayReservation(event) {
 
   // Validación básica de campos del formulario
   if (!paymentMethod.value || !customerName.value.trim() || !customerEmail.value.trim()) {
-    Swal.fire({
+    showAlert({
       icon: 'error',
       title: 'Datos incompletos',
       text: 'Completa método de pago, nombre y correo.'
@@ -222,7 +228,7 @@ function onPayReservation(event) {
     return;
   }
 
-  Swal.fire({
+  showAlert({
     icon: 'success',
     title: 'Pago aprobado',
     html: `
@@ -238,7 +244,7 @@ function onPayReservation(event) {
 // Permite cancelar toda la reserva con confirmación
 function cancelReservation() {
   if (selectedSeats.size === 0 && !customerName.value && !customerEmail.value && !paymentMethod.value) {
-    Swal.fire({
+    showAlert({
       icon: 'info',
       title: 'Nada que cancelar',
       text: 'No hay datos de reserva para limpiar.'
@@ -246,7 +252,7 @@ function cancelReservation() {
     return;
   }
 
-  Swal.fire({
+  showConfirm({
     icon: 'question',
     title: 'Cancelar reserva',
     text: 'Se perderá la selección de asientos y datos del formulario.',
@@ -260,7 +266,7 @@ function cancelReservation() {
     paymentForm.reset();
     refreshUI();
 
-    Swal.fire({
+    showAlert({
       icon: 'success',
       title: 'Reserva cancelada',
       text: 'Los datos fueron limpiados correctamente.',
@@ -278,10 +284,20 @@ function generatePDF() {
 
   // Se requiere una reserva válida para exportar el boleto
   if (selectedSeats.size === 0) {
-    Swal.fire({
+    showAlert({
       icon: 'warning',
       title: 'Sin datos para PDF',
       text: 'Selecciona asientos y realiza una reserva primero.'
+    });
+    return;
+  }
+
+  // Se valida disponibilidad de la librería antes de usarla
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showAlert({
+      icon: 'error',
+      title: 'Error al generar PDF',
+      text: 'No se cargó la librería jsPDF. Revisa tu conexión e inténtalo de nuevo.'
     });
     return;
   }
@@ -306,11 +322,45 @@ function generatePDF() {
 
   doc.save(`boleto-${movie.title.toLowerCase().replace(/\s+/g, '-')}.pdf`);
 
-  Swal.fire({
+  showAlert({
     icon: 'success',
     title: 'PDF generado',
     text: 'Tu boleto fue descargado correctamente.'
   });
+}
+
+// Fallback para poster principal cuando la imagen no se puede cargar
+function onPosterError() {
+  const movie = currentMovie();
+  moviePoster.src = buildFallbackPoster(movie.title);
+}
+
+// Abre el poster actual en un modal con vista ampliada
+function openPosterModal() {
+  const movie = currentMovie();
+  const imageSrc = moviePoster.src || movie.poster;
+
+  if (window.Swal && typeof window.Swal.fire === 'function') {
+    window.Swal.fire({
+      title: movie.title,
+      imageUrl: imageSrc,
+      imageAlt: `Poster ampliado de ${movie.title}`,
+      showCloseButton: true,
+      showConfirmButton: false,
+      width: 'min(92vw, 900px)',
+      background: '#0f172a',
+      color: '#f8fafc'
+    });
+    return;
+  }
+
+  window.open(imageSrc, '_blank', 'noopener,noreferrer');
+}
+
+// Crea una imagen SVG embebida para usar como poster de respaldo
+function buildFallbackPoster(title) {
+  const safeTitle = escapeXml(title);
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='700' height='1000'><defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='#1f2937'/><stop offset='100%' stop-color='#0f766e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><text x='50%' y='45%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial' font-size='38'>Poster no disponible</text><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='#bbf7d0' font-family='Arial' font-size='32'>${safeTitle}</text></svg>`)}`;
 }
 
 // Escapa caracteres peligrosos para evitar inyección en HTML de alertas
@@ -321,4 +371,36 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+// Escapa caracteres XML para incrustarlos de forma segura en SVG
+function escapeXml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+// Muestra alertas con SweetAlert2 y usa fallback si la librería no carga
+function showAlert(config) {
+  if (window.Swal && typeof window.Swal.fire === 'function') {
+    return window.Swal.fire(config);
+  }
+
+  const message = config.text || config.title || 'Mensaje';
+  window.alert(message);
+  return Promise.resolve({});
+}
+
+// Diálogo de confirmación con fallback para evitar romper la ejecución
+function showConfirm(config) {
+  if (window.Swal && typeof window.Swal.fire === 'function') {
+    return window.Swal.fire(config);
+  }
+
+  const message = config.text || config.title || 'Confirmar acción';
+  const accepted = window.confirm(message);
+  return Promise.resolve({ isConfirmed: accepted });
 }
