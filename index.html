@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Reserva de Cine</title>
+
+  <!-- Tipografía para una interfaz moderna y legible -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Hoja de estilos principal -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Contenedor principal de toda la aplicación -->
+  <main class="app" id="app">
+    <!-- Encabezado con título y controles globales -->
+    <header class="app__header">
+      <div>
+        <p class="tag">Reserva Inteligente</p>
+        <h1>Sistema de Reserva de Cine</h1>
+      </div>
+
+      <div class="header-actions">
+        <!-- Selector de moneda para mostrar precios en GTQ o USD -->
+        <label class="control-inline">
+          Moneda:
+          <select id="currencySelect" aria-label="Seleccionar moneda">
+            <option value="GTQ">Quetzales (GTQ)</option>
+            <option value="USD">Dólares (USD)</option>
+          </select>
+        </label>
+
+        <!-- Interruptor para cambiar entre modo claro y oscuro -->
+        <button id="themeToggle" class="btn btn--ghost" type="button">Modo Claro/Oscuro</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <!-- Columna izquierda: selección de película y acciones -->
+      <article class="panel panel--left">
+        <h2>1. Película y horario</h2>
+
+        <!-- Lista dinámica de películas con nombre, horario y precio -->
+        <label for="movieSelect">Selecciona una película:</label>
+        <select id="movieSelect" aria-label="Seleccionar película"></select>
+
+        <!-- Espacio para mostrar información resumida de la película -->
+        <div id="movieInfo" class="movie-info"></div>
+
+        <!-- Póster de la película seleccionada -->
+        <figure class="poster-wrap">
+          <img id="moviePoster" alt="Poster de la película" />
+          <figcaption id="posterCaption">Poster de película</figcaption>
+        </figure>
+
+        <h2>2. Mini pasarela de pago</h2>
+        <!-- Formulario simple para simular cobro de reserva -->
+        <form id="paymentForm" class="payment-form">
+          <label for="paymentMethod">Método de pago:</label>
+          <select id="paymentMethod" required>
+            <option value="">Seleccionar...</option>
+            <option value="Tarjeta de crédito">Tarjeta de crédito</option>
+            <option value="Tarjeta de débito">Tarjeta de débito</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+
+          <label for="customerName">Nombre del cliente:</label>
+          <input id="customerName" type="text" maxlength="80" placeholder="Ej: Ana López" required />
+
+          <label for="customerEmail">Correo:</label>
+          <input id="customerEmail" type="email" placeholder="correo@ejemplo.com" required />
+
+          <!-- Botones de acción principales -->
+          <div class="actions">
+            <button type="submit" class="btn btn--primary">Pagar reserva</button>
+            <button id="cancelBtn" type="button" class="btn btn--danger">Cancelar reserva</button>
+            <button id="pdfBtn" type="button" class="btn btn--accent">Generar boleto PDF</button>
+          </div>
+        </form>
+      </article>
+
+      <!-- Columna derecha: mapa de asientos y resumen -->
+      <article class="panel panel--right">
+        <h2>3. Selección de asientos</h2>
+
+        <!-- Leyenda visual de estados de asientos -->
+        <div class="legend" aria-label="Leyenda de asientos">
+          <span><i class="seat-demo"></i> Libre</span>
+          <span><i class="seat-demo selected"></i> Seleccionado</span>
+          <span><i class="seat-demo occupied"></i> Ocupado</span>
+        </div>
+
+        <!-- Contenedor donde se dibujan los asientos en forma de grilla -->
+        <div id="seatsContainer" class="seats-container" aria-label="Mapa de asientos"></div>
+
+        <!-- Resumen en tiempo real de la compra -->
+        <section class="summary" id="summary">
+          <h3>Resumen de reserva</h3>
+          <p id="summaryMovie">Película: -</p>
+          <p id="summarySeats">Asientos: 0</p>
+          <p id="summaryTotal">Total: Q0.00</p>
+        </section>
+      </article>
+    </section>
+  </main>
+
+  <!-- Librería para alertas bonitas en lugar de alert() nativa -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Librería para exportar boleto PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <!-- Lógica principal de la aplicación -->
+  <script src="script.js"></script>
+</body>
+</html>

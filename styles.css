@@ -1,0 +1,274 @@
+﻿/* Variables globales para colores y tema oscuro por defecto */
+:root {
+  --bg: #111827;
+  --bg-alt: #0f172a;
+  --panel: rgba(255, 255, 255, 0.06);
+  --text: #f8fafc;
+  --muted: #cbd5e1;
+  --primary: #14b8a6;
+  --danger: #ef4444;
+  --accent: #f59e0b;
+  --seat: #e2e8f0;
+  --seat-selected: #22c55e;
+  --seat-occupied: #64748b;
+  --border: rgba(255, 255, 255, 0.14);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* Variables cuando el usuario activa modo claro */
+body.light {
+  --bg: #eef2ff;
+  --bg-alt: #f8fafc;
+  --panel: rgba(255, 255, 255, 0.9);
+  --text: #0f172a;
+  --muted: #334155;
+  --primary: #0d9488;
+  --danger: #dc2626;
+  --accent: #d97706;
+  --seat: #cbd5e1;
+  --seat-selected: #16a34a;
+  --seat-occupied: #64748b;
+  --border: rgba(15, 23, 42, 0.1);
+  --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Estilos base del documento */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  background:
+    radial-gradient(1200px 500px at 85% -20%, rgba(20, 184, 166, 0.2), transparent),
+    radial-gradient(900px 400px at 10% 120%, rgba(245, 158, 11, 0.14), transparent),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Caja principal de la app */
+.app {
+  width: min(1200px, 94%);
+  margin: 1.25rem auto;
+}
+
+/* Encabezado superior con acciones rápidas */
+.app__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tag {
+  margin: 0;
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+h1 {
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.4rem, 3vw, 2.1rem);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.control-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+
+/* Layout de dos columnas en escritorio */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Tarjetas de contenido */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+}
+
+h2, h3 {
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin: 0.55rem 0 0.35rem;
+  color: var(--muted);
+}
+
+select,
+input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+body.light select,
+body.light input {
+  background: #fff;
+}
+
+.movie-info {
+  margin-top: 0.8rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(20, 184, 166, 0.12);
+}
+
+/* Marco visual del poster */
+.poster-wrap {
+  margin: 1rem 0;
+}
+
+#moviePoster {
+  width: 100%;
+  height: 260px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+#posterCaption {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.payment-form {
+  margin-top: 0.35rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+/* Botones reutilizables */
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.68rem 0.92rem;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn--primary {
+  background: var(--primary);
+}
+
+.btn--danger {
+  background: var(--danger);
+}
+
+.btn--accent {
+  background: var(--accent);
+}
+
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.85rem;
+}
+
+/* Mini muestras para explicar estados de asiento */
+.seat-demo,
+.seat {
+  width: 26px;
+  height: 22px;
+  border-radius: 8px 8px 4px 4px;
+  display: inline-block;
+  background: var(--seat);
+}
+
+.seat-demo.selected,
+.seat.selected {
+  background: var(--seat-selected);
+}
+
+.seat-demo.occupied,
+.seat.occupied {
+  background: var(--seat-occupied);
+}
+
+/* Grilla visual para asientos */
+.seats-container {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+}
+
+.seat {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.seat:hover {
+  transform: translateY(-2px);
+}
+
+.seat.occupied {
+  cursor: not-allowed;
+}
+
+.summary {
+  border: 1px dashed var(--border);
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Adaptación a pantallas móviles */
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .app__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
